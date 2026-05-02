@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MoneyMap - Transactions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style> body { font-family: system-ui, sans-serif; } </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-20">
+
+  <!-- Top Bar -->
+  <div class="bg-white border-b sticky top-0 z-50">
+    <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="dashboard.html" class="text-gray-500"><i class="fas fa-arrow-left text-xl"></i></a>
+        <h1 class="text-2xl font-bold" data-translate="transactions">Transactions</h1>
+      </div>
+      <button onclick="speakCurrentPage()" class="bg-blue-600 text-white px-5 py-2 rounded-full text-sm flex items-center gap-2">
+        <i class="fas fa-volume-up"></i> <span data-translate="speak">Speak</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-2xl mx-auto p-4 space-y-8">
+
+    <!-- Add Transaction Form -->
+    <div class="bg-white rounded-3xl shadow p-6">
+      <h2 class="text-xl font-semibold mb-5" data-translate="addTransaction">Add New Transaction</h2>
+      
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Amount (₹)</label>
+          <input id="amount" type="number" placeholder="500" class="w-full p-3 border rounded-2xl text-lg">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Type</label>
+          <select id="type" class="w-full p-3 border rounded-2xl text-lg">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-sm text-gray-600 mb-1">Category</label>
+        <select id="category" class="w-full p-3 border rounded-2xl text-lg">
+          <option value="Kirana">Kirana</option>
+          <option value="Bill">Bill</option>
+          <option value="Medical">Medical</option>
+          <option value="Food">Eating Out</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-sm text-gray-600 mb-1">Description</label>
+        <input id="desc" type="text" placeholder="Weekly grocery or Netflix" class="w-full p-3 border rounded-2xl text-lg">
+      </div>
+
+      <button onclick="addTransaction()" 
+              class="mt-6 w-full bg-blue-600 text-white py-4 rounded-2xl text-lg font-medium">
+        Add Transaction
+      </button>
+    </div>
+
+    <!-- All Transactions -->
+    <div class="bg-white rounded-3xl shadow p-6">
+      <h2 class="text-xl font-semibold mb-4" data-translate="transactions">All Transactions</h2>
+      <div id="transaction-list" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t max-w-2xl mx-auto">
+    <div class="flex justify-around py-3 text-xs">
+      <a href="dashboard.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-home text-2xl"></i><span data-translate="home">Home</span></a>
+      <a href="transactions.html" class="flex flex-col items-center text-blue-600"><i class="fas fa-list text-2xl"></i><span data-translate="transactions">Transactions</span></a>
+      <a href="investment.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-chart-pie text-2xl"></i><span data-translate="invest">Invest</span></a>
+      <a href="insights.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-lightbulb text-2xl"></i><span data-translate="insights">Insights</span></a>
+      <a href="settings.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-cog text-2xl"></i><span data-translate="settings">Settings</span></a>
+    </div>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+  <script>
+    function addTransaction() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      
+      if (!amount || amount <= 0) {
+        alert("Please enter a valid amount");
+        return;
+      }
+
+      const newTrans = {
+        date: new Date().toLocaleDateString('en-IN'),
+        amount: amount,
+        type: document.getElementById('type').value,
+        category: document.getElementById('category').value,
+        desc: document.getElementById('desc').value.trim() || "No description"
+      };
+
+      let transactions = getTransactions();
+      transactions.unshift(newTrans);        // Add to top
+      saveTransactions(transactions);
+
+      loadTransactions();
+
+      // Clear form
+      document.getElementById('amount').value = '';
+      document.getElementById('desc').value = '';
+
+      alert("Transaction Added Successfully!");
+    }
+
+    function loadTransactions() {
+      const transactions = getTransactions();
+      const container = document.getElementById('transaction-list');
+
+      if (transactions.length === 0) {
+        container.innerHTML = `<p class="text-gray-500 py-12 text-center" data-translate="noTransactions">No transactions yet</p>`;
+        return;
+      }
+
+      let html = '';
+      transactions.forEach(t => {
+        const sign = t.type === 'income' ? '+' : '-';
+        const color = t.type === 'income' ? 'text-green-600' : 'text-red-600';
+        html += `
+          <div class="flex justify-between py-3 border-b last:border-0">
+            <div>
+              <p class="font-medium">${t.desc}</p>
+              <p class="text-xs text-gray-500">${t.category} • ${t.date}</p>
+            </div>
+            <p class="${color} font-bold">${sign}₹${t.amount}</p>
+          </div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    window.onload = () => {
+      loadTransactions();
+      translatePage();
+    };
+  </script>
+</body>
+</html>
