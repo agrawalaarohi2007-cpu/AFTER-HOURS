@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MoneyMap</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style> body { font-family: system-ui, sans-serif; } </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Top Bar -->
+  <div class="bg-white border-b sticky top-0 z-50">
+    <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl">💰</div>
+        <div>
+          <h1 class="text-2xl font-bold" data-translate="appName">MoneyMap</h1>
+          <p class="text-xs text-gray-500" data-translate="tagline">Financial Survival & Strategy Engine</p>
+        </div>
+      </div>
+      <button onclick="speakCurrentPage()" class="bg-blue-600 text-white px-5 py-2 rounded-full text-sm flex items-center gap-2">
+        <i class="fas fa-volume-up"></i> <span data-translate="speak">Speak</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-2xl mx-auto p-4">
+
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold" data-translate="welcome">Welcome back!</h2>
+      <p class="text-gray-600" id="family-name">Aarohi</p>
+    </div>
+
+    <!-- Balance -->
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <div class="bg-white rounded-3xl p-6 shadow">
+        <p class="text-gray-500 text-sm" data-translate="totalBalance">Total Balance</p>
+        <p id="total-balance" class="text-4xl font-bold">₹0</p>
+      </div>
+      <div class="bg-white rounded-3xl p-6 shadow">
+        <p class="text-gray-500 text-sm" data-translate="thisMonthSpent">This Month Spent</p>
+        <p id="month-spent" class="text-4xl font-bold text-red-600">₹0</p>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-2 gap-4 mb-10">
+      <a href="transactions.html" class="bg-white rounded-3xl p-8 shadow text-center hover:shadow-xl transition">
+        <div class="text-5xl mb-3">➕</div>
+        <p class="font-semibold" data-translate="addTransaction">Add Transaction</p>
+      </a>
+      <a href="investment.html" class="bg-white rounded-3xl p-8 shadow text-center hover:shadow-xl transition">
+        <div class="text-5xl mb-3">📊</div>
+        <p class="font-semibold" data-translate="investmentPlan">Investment Plan</p>
+      </a>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-3xl shadow p-6">
+      <h3 class="font-semibold mb-4" data-translate="recentActivity">Recent Activity</h3>
+      <div id="recent-transactions"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t max-w-2xl mx-auto">
+    <div class="flex justify-around py-3 text-xs">
+      <a href="dashboard.html" class="flex flex-col items-center text-blue-600"><i class="fas fa-home text-2xl"></i><span data-translate="home">Home</span></a>
+      <a href="transactions.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-list text-2xl"></i><span data-translate="transactions">Transactions</span></a>
+      <a href="investment.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-chart-pie text-2xl"></i><span data-translate="invest">Invest</span></a>
+      <a href="insights.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-lightbulb text-2xl"></i><span data-translate="insights">Insights</span></a>
+      <a href="settings.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-cog text-2xl"></i><span data-translate="settings">Settings</span></a>
+    </div>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+  <script>
+    function updateDashboard() {
+      const transactions = getTransactions();
+      let balance = 0;
+      let spent = 0;
+
+      transactions.forEach(t => {
+        if (t.type === 'income') balance += Number(t.amount || 0);
+        else {
+          balance -= Number(t.amount || 0);
+          spent += Number(t.amount || 0);
+        }
+      });
+
+      // Update Balance
+      const balEl = document.getElementById('total-balance');
+      balEl.textContent = '₹' + balance.toLocaleString('en-IN');
+      balEl.className = `text-4xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+      document.getElementById('month-spent').textContent = '₹' + spent.toLocaleString('en-IN');
+
+      // Family Name
+      document.getElementById('family-name').textContent = localStorage.getItem('familyName') || "Aarohi";
+
+      // Recent Activity - Most Important Fix
+      const container = document.getElementById('recent-transactions');
+
+      if (!transactions || transactions.length === 0) {
+        container.innerHTML = `
+          <p class="text-gray-500 py-16 text-center text-base" data-translate="noTransactions">
+            No transactions yet
+          </p>`;
+        return;
+      }
+
+      let html = '';
+      // Show latest 5 transactions
+      transactions.slice(0, 5).forEach(t => {
+        const sign = t.type === 'income' ? '+' : '-';
+        const color = t.type === 'income' ? 'text-green-600' : 'text-red-600';
+        html += `
+          <div class="flex justify-between py-3 border-b last:border-0">
+            <div class="flex-1 pr-4">
+              <p class="font-medium text-gray-800">${t.desc || 'No description'}</p>
+              <p class="text-xs text-gray-500">${t.category || ''} • ${t.date || 'No date'}</p>
+            </div>
+            <p class="${color} font-semibold text-right">${sign}₹${Number(t.amount).toLocaleString('en-IN')}</p>
+          </div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    window.onload = () => {
+      updateDashboard();
+      translatePage();
+    };
+  </script>
+</body>
+</html>
