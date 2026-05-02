@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MoneyMap - Investment Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style> body { font-family: system-ui, sans-serif; } </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-24">
+
+  <!-- Top Bar -->
+  <div class="bg-white border-b sticky top-0 z-50">
+    <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl">💰</div>
+        <div>
+          <h1 class="text-2xl font-bold" data-translate="appName">MoneyMap</h1>
+          <p class="text-xs text-gray-500" data-translate="tagline">Financial Survival & Strategy Engine</p>
+        </div>
+      </div>
+      <button onclick="speakCurrentPage()" class="bg-blue-600 text-white px-5 py-2 rounded-full text-sm flex items-center gap-2">
+        <i class="fas fa-volume-up"></i> <span data-translate="speak">Speak</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-2xl mx-auto p-4">
+
+    <h1 class="text-2xl font-bold mb-6" data-translate="investmentPlan">Plan Your Family's Money Distribution</h1>
+
+    <div class="bg-white rounded-3xl shadow p-6 mb-8">
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1" data-translate="principalAmount">Principal Amount (₹)</label>
+          <input id="principal" type="number" placeholder="Enter Amount" class="w-full p-4 border border-gray-300 rounded-2xl text-lg">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1" data-translate="yourAge">Your Age</label>
+            <input id="age" type="number" placeholder="45" class="w-full p-4 border border-gray-300 rounded-2xl text-lg">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1" data-translate="goalYears">Goal Years</label>
+            <input id="goalYears" type="number" placeholder="8" class="w-full p-4 border border-gray-300 rounded-2xl text-lg">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-600 mb-1" data-translate="monthlySurplus">Monthly Surplus (₹)</label>
+          <input id="monthlySurplus" type="number" placeholder="Enter Monthly Surplus" class="w-full p-4 border border-gray-300 rounded-2xl text-lg">
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-600 mb-3" data-translate="riskCapacity">Risk Taking Capacity</label>
+          <div class="grid grid-cols-3 gap-3">
+            <button onclick="selectRisk(this, 'conservative')" class="risk-btn p-4 border-2 rounded-2xl text-center" id="btn-conservative">Safe<br><span class="text-xs">Conservative</span></button>
+            <button onclick="selectRisk(this, 'moderate')" class="risk-btn p-4 border-2 border-blue-600 bg-blue-50 rounded-2xl text-center" id="btn-moderate">Balanced<br><span class="text-xs">Moderate</span></button>
+            <button onclick="selectRisk(this, 'aggressive')" class="risk-btn p-4 border-2 rounded-2xl text-center" id="btn-aggressive">Growth<br><span class="text-xs">Aggressive</span></button>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="calculatePlan()" 
+              class="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl text-lg font-semibold" 
+              data-translate="generatePlan">
+        Generate Detailed Plan
+      </button>
+    </div>
+
+    <!-- Result -->
+    <div id="result-section" class="hidden bg-white rounded-3xl shadow p-6">
+      <h2 class="text-xl font-semibold mb-2">Suggested Detailed Distribution</h2>
+      <p id="risk-summary" class="text-gray-600 mb-6"></p>
+
+      <canvas id="investmentChart" height="220" class="mb-8"></canvas>
+
+      <div id="detailed-cards" class="grid grid-cols-1 gap-4"></div>
+
+      <div class="mt-8 bg-blue-50 p-5 rounded-2xl">
+        <p id="explanation" class="text-sm leading-relaxed"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t max-w-2xl mx-auto">
+    <div class="flex justify-around py-3 text-xs">
+      <a href="dashboard.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-home text-2xl"></i><span data-translate="home">Home</span></a>
+      <a href="transactions.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-list text-2xl"></i><span data-translate="transactions">Transactions</span></a>
+      <a href="investment.html" class="flex flex-col items-center text-blue-600"><i class="fas fa-chart-pie text-2xl"></i><span data-translate="invest">Invest</span></a>
+      <a href="insights.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-lightbulb text-2xl"></i><span data-translate="insights">Insights</span></a>
+      <a href="settings.html" class="flex flex-col items-center text-gray-500"><i class="fas fa-cog text-2xl"></i><span data-translate="settings">Settings</span></a>
+    </div>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+  <script>
+    let selectedRisk = 'moderate';
+    let myChart = null;
+
+    function selectRisk(btn, level) {
+      document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('border-blue-600', 'bg-blue-50'));
+      btn.classList.add('border-blue-600', 'bg-blue-50');
+      selectedRisk = level;
+    }
+
+    function calculatePlan() {
+      const principal = parseFloat(document.getElementById('principal').value) || 0;
+      
+      if (principal <= 0) {
+        alert(currentLang === 'hi' ? "कृपया मूलधन राशि दर्ज करें" : "Please enter Principal Amount");
+        return;
+      }
+
+      const age = parseFloat(document.getElementById('age').value) || 45;
+      const goalYears = parseFloat(document.getElementById('goalYears').value) || 8;
+      const monthlySurplus = parseFloat(document.getElementById('monthlySurplus').value) || 0;
+
+      // Show Result Section
+      document.getElementById('result-section').classList.remove('hidden');
+
+      // Pie Chart
+      const ctx = document.getElementById('investmentChart');
+      if (myChart) myChart.destroy();
+
+      let equity = 110 - age;
+      if (goalYears > 10) equity += 10;
+      if (selectedRisk === "aggressive") equity += 20;
+      if (selectedRisk === "conservative") equity -= 25;
+      equity = Math.max(20, Math.min(80, equity));
+
+      const debt = Math.max(10, 85 - equity);
+      const gold = 10;
+
+      myChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Emergency Fund', 'Fixed Income', 'Index Funds', 'Gold', 'Growth Equity'],
+          datasets: [{
+            data: [10, debt, equity, gold, 15],
+            backgroundColor: ['#64748b', '#10b981', '#3b82f6', '#eab308', '#8b5cf6']
+          }]
+        }
+      });
+
+      // Allocation Cards
+      const cardsHTML = `
+        <div class="grid grid-cols-1 gap-4">
+          <div class="bg-gray-50 p-5 rounded-2xl">
+            <p class="font-semibold">Emergency Fund</p>
+            <p class="text-2xl font-bold">₹${Math.round(principal * 0.10).toLocaleString('en-IN')}</p>
+          </div>
+          <div class="bg-gray-50 p-5 rounded-2xl">
+            <p class="font-semibold">Fixed Income</p>
+            <p class="text-2xl font-bold">₹${Math.round(principal * debt / 100).toLocaleString('en-IN')}</p>
+          </div>
+          <div class="bg-gray-50 p-5 rounded-2xl">
+            <p class="font-semibold">Index Funds</p>
+            <p class="text-2xl font-bold">₹${Math.round(principal * equity / 100).toLocaleString('en-IN')}</p>
+          </div>
+          <div class="bg-gray-50 p-5 rounded-2xl">
+            <p class="font-semibold">Gold</p>
+            <p class="text-2xl font-bold">₹${Math.round(principal * gold / 100).toLocaleString('en-IN')}</p>
+          </div>
+          <div class="bg-gray-50 p-5 rounded-2xl">
+            <p class="font-semibold">Growth Equity</p>
+            <p class="text-2xl font-bold">₹${Math.round(principal * 0.15).toLocaleString('en-IN')}</p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('detailed-cards').innerHTML = cardsHTML;
+      document.getElementById('risk-summary').innerHTML = `For a <strong>${selectedRisk.toUpperCase()}</strong> profile`;
+      document.getElementById('explanation').innerHTML = "This plan balances safety and growth. Invest regularly from your monthly surplus.";
+    }
+
+    window.onload = () => {
+      selectRisk(document.getElementById('btn-moderate'), 'moderate');
+      translatePage();
+    };
+  </script>
+</body>
+</html>
